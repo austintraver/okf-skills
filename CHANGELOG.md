@@ -4,6 +4,13 @@ All notable changes to this plugin are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this plugin tracks the
 OKF spec version it supports.
 
+## [0.10.1] - 2026-10-04
+
+### Added
+- **Codex displays the `okf` skill as `OKF`.**
+  `skills/okf/agents/openai.yaml` supplies the OpenAI-specific display name and
+  short description while the portable skill name remains lowercase.
+
 ## [0.10.0] - 2026-09-28
 
 ### Changed
