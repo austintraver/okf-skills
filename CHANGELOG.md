@@ -4,12 +4,69 @@ All notable changes to this plugin are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this plugin tracks the
 OKF spec version it supports.
 
-## [0.10.1] - 2026-10-04
+## [0.10.3] - 2026-10-13
 
 ### Added
 - **Codex displays the `okf` skill as `OKF`.**
   `skills/okf/agents/openai.yaml` supplies the OpenAI-specific display name and
   short description while the portable skill name remains lowercase.
+
+## [0.10.2] - 2026-10-13
+
+### Security
+- **The visualizer loads every CDN script with Subresource Integrity.**
+  `marked` was loaded as `marked@14`, a floating range, and neither it nor
+  Cytoscape carried an `integrity` attribute, so a compromised CDN file or a
+  bad 14.x release would have run in every generated `viz.html` and on the
+  GitHub Pages demos. DOMPurify sanitizes marked's output and cannot guard
+  against marked itself. `marked` is now pinned to 14.1.4, and Cytoscape 3.30.2
+  and marked carry `integrity` and `crossorigin="anonymous"`, like DOMPurify.
+- **Shipped scripts cap their dependencies' major version.** `mcp>=2,<3` and
+  `pyyaml>=6,<7`. `uv run` resolves afresh on every machine with no lockfile, so
+  an `mcp` 3.0 would have broken the MCP server for every install on release day.
+
+### Changed
+- **Release notes come from this changelog.** A release's body is now its
+  `## [<version>]` section here, followed by the generated PR list. It used to
+  be the PR list alone.
+- **`okf_backfill_events.py` catches only the errors it expects** (a missing
+  `git`, a failing git command, an unreadable or non-JSON transcript line). An
+  unexpected error now surfaces with a traceback instead of being skipped
+  silently.
+
+### Added
+- **`CONTRIBUTING.md`** lists the three PR gates (version bump, changelog entry,
+  `.okf/` upkeep) and the local commands that mirror CI. **`SECURITY.md`**
+  describes private vulnerability reporting.
+- **CI lints every Python script with a pinned `ruff`** (`make lint` locally),
+  and tests that CDN scripts carry SRI and that shipped dependencies are capped.
+
+### Fixed
+- **Dependabot updates of the `action.yml` pin no longer stall on the
+  `version-bump` check.** Dependabot cannot bump the plugin version, so such a
+  PR could never pass. A Dependabot PR whose only shipped change is
+  `action.yml` is now exempt, and the pin ships with the next release.
+
+## [0.10.1] - 2026-10-13
+
+### Fixed
+- **`validate` no longer reads regex classes in code as footnotes (#56).**
+  A `[^#?/]` inside a code span or a fenced block warned as a §5.1 footnote
+  naming no source, which made `--strict` unusable on bundles that document
+  regexes. Footnote labels are now collected after code spans and fences are
+  stripped, as CommonMark does.
+- **The Stop hook ignores the Claude Code settings files (#58).** A tracked
+  change to `.claude/settings.json` or `.claude/settings.local.json` alone no
+  longer blocks: `/plugin` writes the first, no concept documents it, and every
+  session in that checkout was blocked until it was committed. Other tracked
+  paths under `.claude/` (commands, hooks, skills) still count.
+
+### Changed
+- **The GitHub Action runs `astral-sh/setup-uv` v10**, pinned by commit SHA
+  (was `@v5`). v10 disables its cache by default on untrusted events, and the
+  action sets no cache inputs, so callers see no change.
+- **Dependabot keeps the workflow and action pins current** (weekly
+  `github-actions` updates).
 
 ## [0.10.0] - 2026-09-28
 

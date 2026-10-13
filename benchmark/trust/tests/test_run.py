@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["pyyaml>=6"]
+# dependencies = ["pyyaml>=6,<7"]
 # ///
 """Unit tests for run.py's trial assembly and preflight checks.
 
@@ -22,7 +22,7 @@ from pathlib import Path
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from run import (  # noqa: E402
+from run import (
     Item,
     PreflightError,
     assemble_trial,

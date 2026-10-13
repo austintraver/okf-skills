@@ -5,8 +5,13 @@
 PAGES_LINK := https://github.com/scaccogatto/okf-skills
 PAGES_OG   := https://scaccogatto.github.io/okf-skills/assets/og.png
 VISUALIZE  := uv run skills/visualize/scripts/okf_visualize.py
+# Pinned: keep in step with the lint step in .github/workflows/ci.yml.
+RUFF       := uvx ruff@0.16.10
 
-.PHONY: docs test validate
+.PHONY: docs lint test validate
+
+lint:
+	$(RUFF) check .
 
 docs:
 	$(VISUALIZE) examples/sample-bundle -o docs/index.html \
@@ -22,6 +27,8 @@ test:
 	uv run tests/test_okf_mcp_e2e.py
 	uv run tests/test_okf_backfill_events.py
 	uv run tests/test_okf_stop_hook.py
+	uv run tests/test_supply_chain.py
+	uv run tests/test_changelog_notes.py
 	uv run benchmark/trust/tests/test_grade_analyze.py
 	uv run benchmark/trust/tests/test_run.py
 	uv run benchmark/trust/tests/test_power.py

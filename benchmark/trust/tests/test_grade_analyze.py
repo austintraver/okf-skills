@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["pyyaml>=6"]
+# dependencies = ["pyyaml>=6,<7"]
 # ///
 """Unit tests for grade.py and analyze.py (trust benchmark, §9 / §3 / §7).
 
@@ -16,11 +16,16 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from grade import extract_answer, grade, normalize  # noqa: E402
-from analyze import (  # noqa: E402
-    MissingTrials, analyze, bootstrap_bca, load_trials, per_item_rates, power_n,
+from analyze import (
+    MissingTrials,
+    analyze,
+    bootstrap_bca,
+    load_trials,
+    per_item_rates,
+    power_n,
     select_k,
 )
+from grade import extract_answer, grade, normalize
 
 F_OLD = "384 KiB"
 F_NEW = "112 KiB"

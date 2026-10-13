@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["pyyaml>=6"]
+# dependencies = ["pyyaml>=6,<7"]
 # ///
 """Deterministic conformance checker for Open Knowledge Format (OKF) v0.2.
 
@@ -61,24 +61,32 @@ ACTOR_SHAPE = re.compile(r"^(?:[^\s:/]+:\S+|\S+/\S+)$")
 # of these, since it satisfies the generic `<prefix>:<id>` shape and so looks
 # entirely well-formed while §5.3 reads it as an agent. The lookahead keeps
 # `humanoid_agent/v1` out: only a non-identifier boundary makes it a near-miss.
-ACTOR_HUMANISH = re.compile(r"^(?:human|process)(?![A-Za-z0-9_])", re.I)
+ACTOR_HUMANISH = re.compile(r"^(?:human|process)(?![A-Za-z0-9_])", re.IGNORECASE)
 FENCE = re.compile(r"^(```|~~~)")
 # markdown link target capture: [text](target) — ignores images ![...]
 LINK = re.compile(r"(?<!\!)\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
-CITATIONS = re.compile(r"^#{1,6}[ \t]+Citations[ \t]*$", re.M)
+CITATIONS = re.compile(r"^#{1,6}[ \t]+Citations[ \t]*$", re.MULTILINE)
 # a footnote *reference* in the body; the definition line `[^id]: …` matches too,
 # which is harmless — both carry the same label, the join key into `sources`.
 FOOTNOTE = re.compile(r"\[\^([^\]\s]+)\]")
+# CommonMark recognizes no footnote inside code (#56): a regex class such as
+# `[^#?/]` in a code span or a fence is code. A fence opens with 3+ backticks or
+# tildes (up to 3 spaces in) and closes on a run of the same char at least as long.
+# A code span closes on a backtick run of exactly its opening length, and may wrap
+# lines within a paragraph but never crosses a blank line.
+FENCE_RUN = re.compile(r"^ {0,3}(`{3,}|~{3,})")
+CODE_SPAN = re.compile(r"(?<!`)(`+)(?!`)((?:(?!\n[ \t]*\n).)+?)(?<!`)\1(?!`)", re.DOTALL)
+
 
 # --migrate only. `timestamp` is a top-level key (§4.1), so anchor at column 0 —
 # an indented one belongs to something else and must not be hoisted.
-TIMESTAMP = re.compile(r"^timestamp:[ \t]*(.+?)[ \t]*$", re.M)
-HEADING = re.compile(r"^#{1,6}[ \t]", re.M)
+TIMESTAMP = re.compile(r"^timestamp:[ \t]*(.+?)[ \t]*$", re.MULTILINE)
+HEADING = re.compile(r"^#{1,6}[ \t]", re.MULTILINE)
 # same shape as LINK above, plus the link text — a citation written with a title
 # attribute, `[Src](url "Title")`, must not be dropped: the section is deleted
 # wholesale once anything parses, so a miss here is silent data loss.
 MD_LINK = re.compile(r"(?<!\!)\[([^\]]+)\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
-OKF_VERSION_LINE = re.compile(r"^(okf_version:[ \t]*)[\"']?0\.1[\"']?[ \t]*$", re.M)
+OKF_VERSION_LINE = re.compile(r"^(okf_version:[ \t]*)[\"']?0\.1[\"']?[ \t]*$", re.MULTILINE)
 # True, and it keeps the concept correctly `unverified` under §5.3: who wrote the
 # content before `generated` existed is not recoverable, and inventing a `human:`
 # actor would fake a review that never happened.
@@ -274,6 +282,24 @@ def check_window(window, where: str, rel: str, report: Report) -> None:
                              f"is not an ISO 8601 datetime (a bare date is tolerated)")
 
 
+def strip_code(body: str) -> str:
+    """The body with fenced blocks and inline code spans removed."""
+    kept: list[str] = []
+    fence = ""
+    for line in body.splitlines():
+        m = FENCE_RUN.match(line)
+        if fence:
+            if m and m.group(1)[0] == fence[0] and len(m.group(1)) >= len(fence) \
+                    and not line[m.end():].strip():
+                fence = ""
+            continue
+        if m and not (m.group(1)[0] == "`" and "`" in line[m.end():]):
+            fence = m.group(1)
+            continue
+        kept.append(line)
+    return CODE_SPAN.sub("", "\n".join(kept))
+
+
 def check_sources(meta: dict, body: str, rel: str, report: Report) -> None:
     """§5.1 — the `sources` provenance family and its footnote join keys."""
     if CITATIONS.search(body):
@@ -311,7 +337,8 @@ def check_sources(meta: dict, body: str, rel: str, report: Report) -> None:
                              f"ISO 8601 datetime (a bare date is tolerated)")
     # Attribution joins on the label, not on position (§5.1) — a footnote whose
     # label names no source silently attributes a claim to nothing.
-    for label in sorted(set(FOOTNOTE.findall(body)) - ids):
+    # Code is skipped: a regex class in a code span is not a footnote (#56).
+    for label in sorted(set(FOOTNOTE.findall(strip_code(body))) - ids):
         report.warn(rel, f"§5.1 footnote `[^{label}]` matches no `sources[].id`")
 
 

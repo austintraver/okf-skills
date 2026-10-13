@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["pyyaml>=6"]
+# dependencies = ["pyyaml>=6,<7"]
 # ///
 """Unit tests for power.py, the calibration-to-measurement step (§7, §3.6).
 
@@ -16,9 +16,13 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from power import (  # noqa: E402
-    CrossContamination, build_plan, heterogeneity_proxy, load_calibration,
-    raw_stale_rates, surviving_items,
+from power import (
+    CrossContamination,
+    build_plan,
+    heterogeneity_proxy,
+    load_calibration,
+    raw_stale_rates,
+    surviving_items,
 )
 
 CONFIG = {

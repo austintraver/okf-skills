@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["pyyaml>=6"]
+# dependencies = ["pyyaml>=6,<7"]
 # ///
 """Item selection and power, the step between calibration and measurement (§7, §3.6).
 
@@ -32,7 +32,7 @@ from pathlib import Path
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from analyze import per_item_rates, select_n_and_k  # noqa: E402
+from analyze import per_item_rates, select_n_and_k
 
 TRUST_DIR = Path(__file__).resolve().parent
 
